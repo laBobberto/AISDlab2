@@ -9,6 +9,7 @@ class Node:
         self.right = right
         self.key = key
         self.label = str(key)
+        self.parent = None
         self.color = color # В данном случае будет использоваться только в Красно-черном дереве, в остальных деревьях будет равно None всегда
 
 
