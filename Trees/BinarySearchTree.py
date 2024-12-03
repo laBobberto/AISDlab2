@@ -1,5 +1,5 @@
 import random
-from Node import Node
+from Trees.Node import Node
 from Trees.Node import drawNodes
 
 
@@ -7,20 +7,20 @@ class BinarySearchTree:
     def __init__(self):
         self.root = None
 
-    def height(self):
-        return self._height(self.root)
+    def getHeight(self, node):
+        return self._getHeight(self.root)
 
-    def _height(self, node):
+    def _getHeight(self, node):
         if node is None:
             return 0
-        left_height = self._height(node.left)
-        right_height = self._height(node.right)
+        left_height = self._getHeight(node.left)
+        right_height = self._getHeight(node.right)
         return max(left_height, right_height) + 1
 
     def drawTree(self):
         drawNodes(self.root)
 
-    def levelOrder(self):
+    def levelorder(self):
         if not self.root:
             return []
         result = []
@@ -71,7 +71,7 @@ class BinarySearchTree:
             self._insert(self.root, key)
 
     def _insert(self, node, key):
-        if key < node.key:
+        if key <= node.key:
             if node.left is None:
                 node.left = Node(key)
             else:
@@ -146,7 +146,3 @@ class BinarySearchTree:
         while current.left is not None:
             current = current.left
         return current
-
-
-
-

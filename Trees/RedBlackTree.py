@@ -1,46 +1,148 @@
 import random
+from Trees.Node import drawNodes
 
 class Node:
-    def __init__(self, key, color):
+    def __init__(self, key, color="red", left=None, right=None):
+        self.left = left
+        self.right = right
         self.key = key
-        self.left = None
-        self.right = None
+        self.label = str(key)
         self.parent = None
-        self.color = color  # True - red, False - black
+        self.color = color
 
-class RBTree:
+
+class RedBlackTree:
     def __init__(self):
-        self.TNULL = Node(0, False)
-        self.root = self.TNULL
-        self.TNULL.right = self.TNULL
-        self.TNULL.parent = None
-        self.root = self.TNULL
+        self.root = None
 
-        def height(self):
-            return self._height(self.root)
+    RED = "red"
+    BLACK = "black"
+
+    def getHeight(self, node):
+        if node is None:
+            return 0
+        left_height = self._getHeight(node.left)
+        right_height = self._getHeight(node.right)
+        return max(left_height, right_height) + 1
+
+    def _getHeight(self, node):
+        if node is None:
+            return 0
+        left_height = self._getHeight(node.left)
+        right_height = self._getHeight(node.right)
+        return max(left_height, right_height) + 1
 
     def drawTree(self):
         drawNodes(self.root)
 
 
+    def levelorder(self):
+        if not self.root:
+            return []
+        result = []
+        queue = [self.root]
+        while queue:
+            current = queue.pop(0)
+            result.append([current.key, current.color])
+            if current.left:
+                queue.append(current.left)
+            if current.right:
+                queue.append(current.right)
+        return result
+
     def inorder(self):
         return self._inorder(self.root, [])
+
+    def _inorder(self, node, result):
+        if node:
+            self._inorder(node.left, result)
+            result.append([node.key, node.color])
+            self._inorder(node.right, result)
+        return result
 
     def preorder(self):
         return self._preorder(self.root, [])
 
+    def _preorder(self, node, result):
+        if node:
+            result.append([node.key, node.color])
+            self._preorder(node.left, result)
+            self._preorder(node.right, result)
+        return result
+
     def postorder(self):
         return self._postorder(self.root, [])
 
-    def levelOrder(self):
-        return self._levelOrder()
+    def _postorder(self, node, result):
+        if node:
+            self._postorder(node.left, result)
+            self._postorder(node.right, result)
+            result.append([node.key, node.color])
+        return result
 
     def insert(self, key):
         self.root = self._insert(self.root, key)
+        self.root.color = self.BLACK
+
+    def _insert(self, node, key):
+        if node is None:
+            return Node(key, self.RED)
+
+        if key < node.key:
+            node.left = self._insert(node.left, key)
+        else:
+            node.right = self._insert(node.right, key)
+
+        if self.isRed(node.right) and not self.isRed(node.left):
+            node = self.leftRotate(node)
+
+        if self.isRed(node.left) and self.isRed(node.left.left):
+            node = self.rightRotate(node)
+
+        if self.isRed(node.left) and self.isRed(node.right):
+            self.flipColors(node)
+
+        return node
+
+    def leftRotate(self, node):
+        x = node.right
+        node.right = x.left
+        x.left = node
+        x.color = node.color
+        node.color = self.RED
+        return x
+
+    def rightRotate(self, node):
+        x = node.left
+        node.left = x.right
+        x.right = node
+        x.color = node.color
+        node.color = self.RED
+        return x
+
+    def flipColors(self, node):
+        node.color = self.RED
+        node.left.color = self.BLACK
+        node.right.color = self.BLACK
+
+    def isRed(self, node):
+        return node is not None and node.color == self.RED
 
     def bestInsert(self, keys):
         sort_keys = sorted(keys)
-        self.root = self._bestInsert(sort_keys)
+        self.root = None
+        self._bestInsert(sort_keys)
+
+    def _bestInsert(self, keys):
+        """
+        Рекурсивно вставляет ключи из отсортированного списка, сохраняя свойства красно-черного дерева.
+        """
+        if not keys:
+            return
+        mid = len(keys) // 2
+        self.insert(keys[mid])
+        self._bestInsert(keys[:mid])
+        self._bestInsert(keys[mid + 1:])
 
     def averageInsert(self, keys):
         random.shuffle(keys)
@@ -51,265 +153,89 @@ class RBTree:
         for key in keys:
             self.insert(key)
 
-    def delete(self, key):
-        self.root = self._delete(self.root, key)
-
     def search(self, key):
         return self._search(self.root, key)
 
-
-
-    def _search(self, key, node=None):
+    def _search(self, node, key):
         if node is None:
-            node = self.root
-
-        while node != self.TNULL and key != node.key:
-            if key < node.key:
-                node = node.left
-            else:
-                node = node.right
-
-        return node
-
-    def insert(self, key):
-        new_node = Node(key, True)
-        new_node.left = new_node.right = self.TNULL
-
-        parent = None
-        current = self.root
-
-        while current != self.TNULL:
-            parent = current
-            if key < current.key:
-                current = current.left
-            else:
-                current = current.right
-
-        new_node.parent = parent
-        if parent is None:
-            self.root = new_node
-        elif key < parent.key:
-            parent.left = new_node
-        else:
-            parent.right = new_node
-
-        new_node.color = True
-        self.insertFix(new_node)
-
-    def insertFix(self, node):
-        while node.parent and node.parent.color:
-            if node.parent == node.parent.parent.left:
-                uncle = node.parent.parent.right
-                if uncle and uncle.color:
-                    node.parent.color = False
-                    uncle.color = False
-                    node.parent.parent.color = True
-                    node = node.parent.parent
-                else:
-                    if node == node.parent.right:
-                        node = node.parent
-                        self.left_rotate(node)
-                    node.parent.color = False
-                    node.parent.parent.color = True
-                    self.right_rotate(node.parent.parent)
-            else:
-                uncle = node.parent.parent.left
-                if uncle and uncle.color:
-                    node.parent.color = False
-                    uncle.color = False
-                    node.parent.parent.color = True
-                    node = node.parent.parent
-                else:
-                    if node == node.parent.left:
-                        node = node.parent
-                        self.right_rotate(node)
-                    node.parent.color = False
-                    node.parent.parent.color = True
-                    self.left_rotate(node.parent.parent)
-
-        self.root.color = False
+            return False
+        if key == node.key:
+            return True
+        if key < node.key:
+            return self._search(node.left, key)
+        return self._search(node.right, key)
 
     def delete(self, key):
-        node = self.search(key)
-        if node == self.TNULL:
-            return
+        if self.root is None:
+            return None
+        self.root = self._delete(self.root, key)
+        if self.root:
+            self.root.color = self.BLACK
 
-        y = node
-        y_original_color = y.color
-        if node.left == self.TNULL:
-            x = node.right
-            self.transplant(node, node.right)
-        elif node.right == self.TNULL:
-            x = node.left
-            self.transplant(node, node.left)
+    def _delete(self, node, key):
+        if node is None:
+            return node
+
+        if key < node.key:
+            node.left = self._delete(node.left, key)
+        elif key > node.key:
+            node.right = self._delete(node.right, key)
         else:
-            y = self.minimum(node.right)
-            y_original_color = y.color
-            x = y.right
-            if y.parent == node:
-                x.parent = y
-            else:
-                self.transplant(y, y.right)
-                y.right = node.right
-                y.right.parent = y
+            if node.left is None:
+                return node.right
+            elif node.right is None:
+                return node.left
 
-            self.transplant(node, y)
-            y.left = node.left
-            y.left.parent = y
-            y.color = node.color
+            min_node = self._minValueNode(node.right)
+            node.key = min_node.key
+            node.right = self._delete(node.right, min_node.key)
 
-        if y_original_color == False:
-            self.deleteFix(x)
-
-    def deleteFix(self, x):
-        while x != self.root and not x.color:
-            if x == x.parent.left:
-                sibling = x.parent.right
-                if sibling.color:
-                    sibling.color = False
-                    x.parent.color = True
-                    self.left_rotate(x.parent)
-                    sibling = x.parent.right
-
-                if not sibling.left.color and not sibling.right.color:
-                    sibling.color = True
-                    x = x.parent
-                else:
-                    if not sibling.right.color:
-                        sibling.left.color = False
-                        sibling.color = True
-                        self.right_rotate(sibling)
-                        sibling = x.parent.right
-
-                    sibling.color = x.parent.color
-                    x.parent.color = False
-                    sibling.right.color = False
-                    self.left_rotate(x.parent)
-                    x = self.root
-            else:
-                sibling = x.parent.left
-                if sibling.color:
-                    sibling.color = False
-                    x.parent.color = True
-                    self.right_rotate(x.parent)
-                    sibling = x.parent.left
-
-                if not sibling.left.color and not sibling.right.color:
-                    sibling.color = True
-                    x = x.parent
-                else:
-                    if not sibling.left.color:
-                        sibling.right.color = False
-                        sibling.color = True
-                        self.left_rotate(sibling)
-                        sibling = x.parent.left
-
-                    sibling.color = x.parent.color
-                    x.parent.color = False
-                    sibling.left.color = False
-                    self.right_rotate(x.parent)
-                    x = self.root
-
-        x.color = False
-
-    def transplant(self, u, v):
-        if u.parent is None:
-            self.root = v
-        elif u == u.parent.left:
-            u.parent.left = v
-        else:
-            u.parent.right = v
-        v.parent = u.parent
-
-    def minimum(self, node):
-        while node.left != self.TNULL:
-            node = node.left
         return node
 
-    def left_rotate(self, x):
-        y = x.right
-        x.right = y.left
-        if y.left != self.TNULL:
-            y.left.parent = x
-        y.parent = x.parent
-        if x.parent is None:
-            self.root = y
-        elif x == x.parent.left:
-            x.parent.left = y
-        else:
-            x.parent.right = y
-        y.left = x
-        x.parent = y
+    def moveRedLeft(self, node):
+        self.flipColors(node)
+        if self.isRed(node.right.left):
+            node.right = self.rightRotate(node.right)
+            node = self.leftRotate(node)
+            self.flipColors(node)
+        return node
 
-    def right_rotate(self, x):
-        y = x.left
-        x.left = y.right
-        if y.right != self.TNULL:
-            y.right.parent = x
-        y.parent = x.parent
-        if x.parent is None:
-            self.root = y
-        elif x == x.parent.right:
-            x.parent.right = y
-        else:
-            x.parent.left = y
-        y.right = x
-        x.parent = y
+    def moveRedRight(self, node):
+        self.flipColors(node)
+        if self.isRed(node.left.left):
+            node = self.rightRotate(node)
+            self.flipColors(node)
+        return node
 
-    def inorder(self):
-        def _inorder(node):
-            if node != self.TNULL:
-                yield from _inorder(node.left)
-                yield str(node.key)
-                yield from _inorder(node.right)
+    def balance(self, node):
+        if self.isRed(node.right):
+            node = self.leftRotate(node)
+        if self.isRed(node.left) and self.isRed(node.left.left):
+            node = self.rightRotate(node)
+        if self.isRed(node.left) and self.isRed(node.right):
+            self.flipColors(node)
+        return node
 
-        return " ".join(_inorder(self.root))
+    def fixAfterDelete(self, node):
+        if self.isRed(node.right):
+            node = self.leftRotate(node)
+        if self.isRed(node.left) and self.isRed(node.left.left):
+            node = self.rightRotate(node)
+        if self.isRed(node.left) and self.isRed(node.right):
+            self.flipColors(node)
+        return node
 
-    def preorder(self):
-        def _preorder(node):
-            if node != self.TNULL:
-                yield str(node.key)
-                yield from _preorder(node.left)
-                yield from _preorder(node.right)
+    def balance(self, node):
+        if self.isRed(node.right):
+            node = self.leftRotate(node)
+        if self.isRed(node.left) and self.isRed(node.left.left):
+            node = self.rightRotate(node)
+        if self.isRed(node.left) and self.isRed(node.right):
+            self.flipColors(node)
+        return node
 
-        return " ".join(_preorder(self.root))
-
-    def postorder(self):
-        def _postorder(node):
-            if node != self.TNULL:
-                yield from _postorder(node.left)
-                yield from _postorder(node.right)
-                yield str(node.key)
-
-        return " ".join(_postorder(self.root))
-
-
-    def levelOrder(self):
-        return " ".join(self._levelOrder())
-
-    def _levelOrder(self):
-        queue = [self.root]
-        while queue:
-            node = queue.pop(0)
-            if node != self.TNULL:
-                yield " ".join(str(node.key))
-                if node.left:
-                    queue.append(node.left)
-                if node.right:
-                    queue.append(node.right)
-
-
-
-    def getHeight(self, node=None):
-        if node is None:
-            node = self.root
-
-        if node == self.TNULL:
-            return 0
-
-        left_height = self.getHeight(node.left)
-        right_height = self.getHeight(node.right)
-        return max(left_height, right_height) + 1
-
-
-
+    def _minValueNode(self, node):
+        current = node
+        while current.left is not None:
+            current = current.left
+        return current
